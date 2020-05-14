@@ -1,0 +1,350 @@
+<!-- 记录 -->
+<html>
+
+<head>
+    <title>记账</title>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+</head>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/Vue.js"></script>
+<script src="/static/js/mint-ui.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/md5.js"></script>
+<script src="/static/js/json2.js"></script>
+<link rel="stylesheet" href="/static/css/mint-ui.css">
+
+<body>
+    <div id="app">
+        <mt-field label="金额:" placeholder="请输入金额" :attr="{ maxlength: 20 }" v-model="form.monery"></mt-field>
+        <mt-radio title="支出/收入" v-model="form.outin" @change="outinChange" :options="options"></mt-radio>
+        <mt-field label="分类明细" @click.native="classifyFocus" readonly="true">{[classifys.name]} - {[classifys.name1]}
+        </mt-field>
+        <mt-field label="时间:" @click.native="openPicker" readonly="true"  v-model="form.time"></mt-field>
+        <mt-field label="备注:" type="textarea" rows="3" placeholder="请输入备注" :attr="{ maxlength: 30 }" v-model="form.remark"></mt-field>
+        <div style="margin-top: 10px;"></div>
+        <mt-button style="margin-top:20px;" type="primary" @click.native="saveClick" size="large">保存</mt-button>
+        <mt-button style="margin-top:20px;" type="default"  @click.native="returnClick" size="large">取消</mt-button>
+        <mt-button style="margin-top:20px;" v-if="type=='edit'" type="danger" @click.native="del" size="large">删除</mt-button>
+        <!-- 时间选择弹窗 -->
+        <template>
+            <mt-datetime-picker
+            ref="picker"
+            type="datetime"
+            @confirm="timeClick"	
+            v-model="pickerValue">
+          </mt-datetime-picker>
+        </template>
+        <!-- 分类选择弹窗 -->
+        <mt-popup style="width: 100%;" v-model="classifys.popupVisible" closeOnClickModal="false" position="bottom">
+            <div style="width: 52%;float: left;"> <mt-picker style="float: right;" :slots="slots" @change="onValuesChange"></mt-picker></div>
+            <div style="width: 48%;float: right;"><mt-picker style="float: left;" :slots="slots1"  @change="onValuesChange1"></mt-picker></mt-picker></div>
+            <!-- <mt-picker style="float: right;" :slots="slots" @change="onValuesChange"></mt-picker>
+            <mt-picker style="float: left;" :slots="slots1"  @change="onValuesChange1"></mt-picker> -->
+        </mt-popup>
+    </div>
+</body>
+<script>
+    let templageData={{.}}
+    console.log(templageData)
+    let app = new Vue({
+        delimiters: ["{[", "]}"],
+        el: "#app",
+        data: {
+             //时间选择器的值
+             pickerValue:"",
+            //支出分类
+            outClssify: [],
+            //收入分类
+            inClassify: [],
+            //分类
+            classifys: {
+                popupVisible: false,
+                name: "",
+                name1: "",
+                index: 0,
+                children: [],
+            },
+            //表单数据
+            form: {
+                id:0,
+                //金额
+                monery: "",
+                //支出/收入
+                outin: 1,
+                //一级分类
+                oneClassify: 0,
+                //二级分类
+                twoClassify: 0,
+                //时间
+                time:"",
+                //备注
+                remark: ""
+
+            },
+            //类型 修改还是添加
+           type:"add",
+            //单选框数据
+            options: [
+                {
+                    label: '支出',
+                    value: 1
+                },
+                {
+                    label: '收入',
+                    value: 2
+                }
+            ],
+            //选择器数据
+            slots: [
+                {
+                    flex: 1,
+                    values: [],
+                    className: 'slot1',
+                    textAlign: 'right'
+                }, {
+                    divider: true,
+                    content: '-',
+                    className: 'slot2'
+                }
+            ],
+            slots1: [
+                {
+                    flex: 1,
+                    values: [],
+                    className: 'slot3',
+                    textAlign: 'left'
+                }
+            ],
+        },
+        methods: {
+            //点击保存
+            saveClick(){
+                if("add"===this.type){
+                   this.save()
+                }else{
+                    this.edit()
+                }
+            },
+            //取消返回
+            returnClick(){
+                if("add"===this.type){
+                    this.returnMaster()
+                }else{
+                    this.returnRunningWater()
+                }
+            },
+            //删除
+            del(){
+                axios.post("/record/delRecord",{id:this.form.id}).then(({ data }) => {
+                    this.$indicator.close()
+                    if (data.status != 200) return alert(data.mes)
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.returnClick()
+                })
+            },
+            //修改
+            edit(){
+                console.log(this.form)
+                if(isEmpty(this.form.monery)||isNaN(this.form.monery)){
+                    this.$toast({
+                        message: '请填入正确的金额',
+                        duration: 1500
+                    });
+                    return
+                }
+                if(isEmpty(this.form.oneClassify)||this.form.oneClassify==0||isEmpty(this.form.twoClassify)||this.form.twoClassify==0){
+                    this.$toast({
+                        message: '请选择分类',
+                        duration: 1500
+                    });
+                    return
+                }
+                this.$indicator.open('加载中...');
+                this.form.monery=parseFloat(this.form.monery)
+                axios.post("/record/editRecord",this.form).then(({ data }) => {
+                    this.$indicator.close()
+                    if (data.status != 200) return alert(data.mes)
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.returnClick()
+                })
+            },
+            //保存
+            save(){
+                if(isEmpty(this.form.monery)||isNaN(this.form.monery)){
+                    this.$toast({
+                        message: '请填入正确的金额',
+                        duration: 1500
+                    });
+                    return
+                }
+                if(isEmpty(this.form.oneClassify)||isEmpty(this.form.twoClassify)){
+                    this.$toast({
+                        message: '请选择分类',
+                        duration: 1500
+                    });
+                    return
+                }
+                this.$indicator.open('加载中...');
+                this.form.monery=parseFloat(this.form.monery)
+                axios.post("/record/SaveRecord",this.form).then(({ data }) => {
+                    this.$indicator.close()
+                    if (data.status != 200) return alert(data.mes)
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.returnClick()
+                })
+
+            },
+            //取消返回主页
+            returnMaster(){
+                window.location.href="/master"
+            },
+             //取消返回流水
+             returnRunningWater(){
+                window.location.href="/record/runningWater"
+            },
+            //确定选择时间
+            timeClick(){
+                this.form.time=getMyTime("yyyy-MM-dd hh:mm",this.pickerValue)
+            },
+            //打开日期选择器
+            openPicker() {
+                this.$refs.picker.open();
+            },
+            //支出/收入改变
+            outinChange() {
+                this.slots[0].values = []
+                this.slots1[0].values = []
+                if (this.form.outin == 1) {
+                    this.outClssify.forEach(item => {
+                        this.slots[0].values.push(item.name)
+                    })
+                    if (this.slots[0].values.length > 0) {
+                        this.outClssify[0].children.forEach(item => {
+                            this.slots1[0].values.push(item.name)
+                        })
+                    }
+                } else {
+                    this.inClassify.forEach(item => {
+                        this.slots[0].values.push(item.name)
+                    })
+                    if (this.slots[0].values.length > 0) {
+                        this.inClassify[0].children.forEach(item => {
+                            this.slots1[0].values.push(item.name)
+                        })
+                    }
+                }
+            },
+            //打开分类选择
+            classifyFocus() {
+                if(isEmpty(this.slots[0].values)){
+                    let mes="支出"
+                    if(this.form.outin==2){
+                        mes="收入"
+                    }
+                    return this.$toast({
+                        message:mes+"没有设置分类请先设置分类",
+                        duration: 1500
+                    })
+                }
+                this.classifys.popupVisible = true
+            },
+            //分类选择器改变
+            onValuesChange(p, v) {
+                var item = null
+                if (this.form.outin == 1) {
+                    item = this.outClssify.find(i => v[0] == i.name)
+                } else {
+                    item = this.inClassify.find(i => v[0] == i.name)
+                }
+                if (!isEmpty(item)) {
+                    this.slots1[0].values = []
+                    item.children.forEach(it => {
+                        this.slots1[0].values.push(it.name)
+                    })
+                    this.classifys.children = item.children
+                    this.classifys.name = item.name
+                    this.form.oneClassify = item.id
+                }
+            },
+            //分类选择器改变
+            onValuesChange1(p, v) {
+                this.form.twoClassify =0
+                this.classifys.name1=""
+                var jt = this.classifys.children.find(i => v[0] == i.name)
+                if (!isEmpty(jt)) {
+                    this.form.twoClassify  = jt.id
+                    this.classifys.name1 = jt.name
+                }
+            },
+            //获取分类
+            getClassifys() {
+                axios.post("/setUp/getGroupClassify").then(({ data }) => {
+                    if (data.status != 200) {
+                        alert(data.msg)
+                        return
+                    }
+                    this.outClssify = data.data[0]
+                    this.inClassify = data.data[1]
+                    this.outClssify.forEach(item => {
+                        this.slots[0].values.push(item.name)
+                    })
+                    if (this.slots[0].values.length > 0) {
+                        this.outClssify[0].children.forEach(item => {
+                            this.slots1[0].values.push(item.name)
+                        })
+                    }
+                })
+            },
+           
+            SearchRecordById(){
+                axios.post("/record/SearchRecordById",{id:this.form.id}).then(({ data }) => {
+                    if (data.status != 200) {
+                        alert(data.mes)
+                        return
+                    }
+                   this.form=data.data
+                   this.pickerValue=this.form.time
+                   let cld=null
+                   if(this.form.outin==1){
+                    cld =this.outClssify.find(i=>i.id==this.form.oneClassify)
+                   
+                   }else {
+                    cld =this.inClassify.find(i=>i.id==this.form.oneClassify)
+                   }
+                   if (!isEmpty(cld)){
+                        this.classifys.name=cld.name
+                        j =cld.children.find(i=>i.id==this.form.twoClassify)
+                        if(!isEmpty(j)){
+                            this.classifys.name1=j.name
+                        }
+                    }
+                   
+                })
+            }
+        },
+        mounted() {
+            this.getClassifys()
+            this.type=templageData.type
+            if("add"===this.type){
+                this.form.time=getMyTime("yyyy-MM-dd hh:mm")
+                this.pickerValue=this.form.time
+            }else if("edit"===this.type){
+                this.form.id=parseInt(templageData.id)
+                this.SearchRecordById()
+            }
+        },
+    })
+</script>
+
+</html>

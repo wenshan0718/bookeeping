@@ -1,0 +1,95 @@
+<html>
+
+<head>
+    <title>分类统计</title>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+</head>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/Vue.js"></script>
+<script src="/static/js/mint-ui.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/md5.js"></script>
+<script src="/static/js/json2.js"></script>
+<link rel="stylesheet" href="/static/css/mint-ui.css">
+
+<body>
+    <div id="app">
+        <div>
+        <mt-navbar>
+            <mt-tab-item @click.native="close"> 返回</mt-tab-item>
+            <mt-tab-item @click.native="tiemChange(1)">按日分类</mt-tab-item>
+            <mt-tab-item @click.native="tiemChange(2)">按月分类</mt-tab-item>
+            <mt-tab-item @click.native="tiemChange(3)">按年分类</mt-tab-item>
+        </mt-navbar>
+    </div>
+        <div >
+            <ul style=" max-height: 100vh; overflow-y: auto;" v-infinite-scroll="search"
+                infinite-scroll-disabled="loading" infinite-scroll-distance="10">
+                <li v-for="v in tableDate" style="margin-top: 10px;">
+                    <div>{[v.time]}&nbsp;&nbsp;</div>
+                    <div v-if="v.time !='已全部加载'"> {[v.outin==1?"支出":"收入"]}&nbsp; {[v.monery]}&nbsp;&nbsp;
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>
+<script>
+
+    let app = new Vue({
+        delimiters: ["{[", "]}"],
+        el: '#app',
+        data: {
+            //数据
+            tableDate: [],
+            form: {
+                //时间类型
+                timeType: 1,
+                //分页
+                page: 0,
+                //每页数量
+                pageSize: 10,
+            },
+            loading: false,
+        },
+        methods: {
+            //时间类型改变
+            tiemChange(i) {
+                this.form.timeType = i
+                this.tableDate = []
+                this.form.page = 0
+                this.loading = false
+                this.search()
+            },
+            //返回主页
+            close() {
+                window.location.href = "/master"
+            },
+            //查询数据
+            search() {
+                this.loading = true
+                this.$indicator.open('加载中...');
+                axios.post("/statistics/SearchRecordOfTime", this.form).then(({ data }) => {
+                    this.$indicator.close()
+                    if (data.status != 200) return alert(data.mes)
+                    if (data.data.length > 0) {
+                        this.loading = false
+                        this.tableDate.push(...data.data)
+                        this.form.page++
+                    } else {
+                        this.tableDate.push({ time: "已全部加载" })
+                    }
+                })
+
+            }
+        },
+        mounted() {
+            this.search()
+        }
+    })
+</script>
+
+</html>

@@ -1,0 +1,155 @@
+<html>
+
+<head>
+    <title>登录</title>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+</head>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/Vue.js"></script>
+<script src="/static/js/mint-ui.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/md5.js"></script>
+<script src="/static/js/json2.js"></script>
+<link rel="stylesheet" href="/static/css/mint-ui.css">
+
+<body>
+    <div id="app">
+        <mt-field label="用户名" placeholder="请输入用户名" :attr="{ maxlength: 20 }" v-model="form.name"></mt-field>
+        <mt-field label="密码" placeholder="请输入密码" :attr="{ maxlength: 50 }" type="password" v-model="form.password"></mt-field>
+        <div style="margin-top: 10px;margin-bottom: 10px;"><input name="save" id="save" type="checkbox"
+                @click="recordClick" checked>自动登录</div>
+        <mt-button type="primary" @click.native="login(false)" size="large">登录</mt-button>
+        <mt-button type="default" size="large" @click.native="registerClick">注册</mt-button>
+        <mt-popup v-model="register.popupVisible" closeOnClickModal="false" popup-transition="popup-fade" style="height:100%;width:100%;">
+            <mt-field label="用户名" placeholder="请输入用户名" v-model="register.name" ></mt-field>
+            <mt-field label="密码" placeholder="请输入密码" type="password" :attr="{ maxlength: 50 }" v-model="register.password"></mt-field>
+            <mt-field label="确认密码" placeholder="请输入密码" type="password"  :attr="{ maxlength: 50 }" v-model="register.towPassword"></mt-field>
+            <div style="margin-top: 10px;"></div>
+            <mt-button type="primary" @click.native="registerSave" size="large">保存</mt-button>
+            <mt-button type="default" size="large" @click.native="registClose">取消</mt-button>
+        </mt-popup>
+    </div>
+</body>
+<script>
+
+    let app = new Vue({
+        delimiters: ["{[", "]}"],
+        el: '#app',
+        data: {
+            title: '登录',
+            form: {
+                name: '',
+                password: "",
+            },
+            record: true,
+            register: {
+                popupVisible: false,
+                name: "",
+                password: "",
+                towPassword: "",
+            },
+        },
+        methods: {
+            //提示信息关闭
+            messageClose(){
+                console.log("close")
+              this.message.popupVisible=false
+                this.message.message=""
+            },
+            //注册用户
+            registerSave() {
+                if (isEmpty(this.register.name)||isEmpty(this.register.password)||isEmpty(this.register.towPassword)){
+                  alert("请输入用户名和密码")
+                      return
+                }
+                if (this.register.password !=this.register.towPassword ){
+                    alert("密码和确认密码不相同")
+                    return   
+                }
+                this.register.password = hex_md5(this.register.password)
+                this.$indicator.open('加载中...');
+                axios.post("/login/register",{name:this.register.name,password:this.register.password}).then(({ data }) => {
+                    this.$indicator.close()
+                    if (data.status != 200) return alert(data.mes)
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.registClose()
+                })
+            },
+            //注册弹窗关闭
+            registClose() {
+                this.register = {
+                    popupVisible: false,
+                    name: "",
+                    password: "",
+                    towPassword: "",
+                }
+            },
+            //点击注册
+            registerClick() {
+                this.register.popupVisible = true
+            },
+            //自动登录勾选点击事件
+            recordClick() {
+                if (this.record) {
+                    this.record = false
+                } else {
+                    this.record = true
+                }
+            },
+            //登录
+            login(auto) {
+                if (isEmpty(this.form.name) || isEmpty(this.form.password)) {
+                    return this.$toast({
+                        message: '请输入用户名和密码',
+                        duration: 1000
+                    });
+                }
+                if (!auto) {
+                    this.form.password = hex_md5(this.form.password)
+                }
+                this.$indicator.open('加载中...');
+                axios.post("/login/commit", this.form).then(({ data }) => {
+                    this.$indicator.close()
+                    console.log(data)
+                    if (data.status != 200) return this.$toast({ message: data.mes, duration: 1000 })
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    if (this.record) {
+                        let date = new Date()
+                        //data
+                        date.setMonth(date.getMonth()+2)
+                        document.cookie = "user=" + JSON.stringify(this.form) +";expires="+date
+                    } else {
+                        document.cookie = "user="
+                    }
+                    //将sessionId放入cookie中
+                    document.cookie="sessionId="+data.data
+                    window.location.href="/master"
+                })
+
+            },
+        },
+        mounted() {
+            //读取cookie数据是否设置自动登录
+            let cookieDate = getCookieByName("user")
+            if (!isEmpty(cookieDate)) {
+                let parseData = JSON.parse(cookieDate)
+                this.form.name = parseData.name
+                this.form.password = parseData.password
+                if (!isEmpty(this.form.name) && !isEmpty(this.form.password)) {
+                    this.login(true)
+                }
+            }
+
+        },
+    })
+</script>
+
+</html>

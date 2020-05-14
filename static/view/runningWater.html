@@ -1,0 +1,102 @@
+<html>
+<!-- 流水 -->
+<head>
+    <title>流水</title>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+</head>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/Vue.js"></script>
+<script src="/static/js/mint-ui.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/md5.js"></script>
+<script src="/static/js/json2.js"></script>
+<link rel="stylesheet" href="/static/css/mint-ui.css">
+
+<body>
+    <div id="app">
+        <div>
+            <mt-header fixed >
+                <router-link to="/" slot="left">
+                    <mt-button icon="back" @click.native="close">返回</mt-button>
+                </router-link>
+            </mt-header>
+        </div>
+        <div style="margin-top: 15%;">
+            <!-- <mt-cell v-for="(v,i) of tableDate" :title="v.time" :value="v.monery">
+                {[v.outin==1?"支出":"收入"]}&nbsp; {[v.monery]}
+              
+            </mt-cell> -->
+            <ul
+            style=" max-height: 100vh; overflow-y: auto;"
+            v-infinite-scroll="search"
+            infinite-scroll-disabled="loading"
+            infinite-scroll-distance="10">
+            <li v-for="v in tableDate" style="margin-top: 10px;">
+                <div>{[v.time]}&nbsp;&nbsp;</div>
+                <div v-if="v.time !='已全部加载'"> {[v.outin==1?"支出":"收入"]}&nbsp; {[v.monery]}&nbsp;&nbsp;{[v.remark]}
+                    <mt-button type="primary" @click.native="edit(v.id)"  style="float: right;">编辑</mt-button>    
+                        &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp;
+                </div>
+                
+            </li>
+            </ul>
+        </div>
+    </div>
+</body>
+<script>
+
+    let app = new Vue({
+        delimiters: ["{[", "]}"],
+        el: '#app',
+        data: {
+            tableDate:[],
+            form:{
+                page:1,
+                pageSize:10,
+            },
+            loading:false
+        },
+        methods: {
+            //查询数据
+            search(){
+                this.loading=true
+                this.$indicator.open('加载中...');
+                axios.post("/record/searchRecord",this.form).then(({ data }) => {
+                    this.$indicator.close()
+                    if (data.status != 200){
+                        this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                        });
+                    }
+                    if(data.data.length>0){
+                        this.tableDate.push(...data.data) 
+                        this.loading=false
+                        this.form.page++
+                    }else{
+                        this.tableDate.push({
+                            time:"已全部加载"
+                        }) 
+                    }
+                })
+            },
+            //编辑
+            edit(id){
+                window.location.href = "/record/index?id="+id
+            },
+            //返回主页
+            close() {
+                window.location.href = "/master"
+            },
+    
+        },
+        mounted() {
+          //this.search()
+
+        },
+    })
+</script>
+
+</html>

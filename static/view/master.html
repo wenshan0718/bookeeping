@@ -1,0 +1,100 @@
+<html>
+
+<head>
+  <title>主页</title>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+</head>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/Vue.js"></script>
+<script src="/static/js/mint-ui.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/md5.js"></script>
+<script src="/static/js/json2.js"></script>
+<link rel="stylesheet" href="/static/css/mint-ui.css">
+
+<body>
+  <div id="app">
+    <div>
+      <mt-cell title="本日支出:" :value="dayOut"></mt-cell>
+      <mt-cell title="本日收入:" :value="dayIn"></mt-cell>
+      <mt-cell title="结余:" :value="dayIn-dayOut"></mt-cell>
+      <mt-cell></mt-cell>
+      <mt-cell title="本月支出:" :value="monthOut"></mt-cell>
+      <mt-cell title="本月收入:" :value="monthIn"></mt-cell>
+      <mt-cell title="结余:" :value="monthIn-monthOut"></mt-cell>
+      <mt-cell></mt-cell>
+      <mt-cell title="本年支出:" :value="yearOut"></mt-cell>
+      <mt-cell title="本年收入:" :value="yearIn"></mt-cell>
+      <mt-cell title="结余:" :value="yearIn-yearOut"></mt-cell>
+    </div>
+    <div></div>
+    <mt-tabbar v-model="selected">
+      <mt-tab-item id="分类统计" @click.native="statisticsClassify">
+        分类统计
+      </mt-tab-item>
+      <mt-tab-item id="时间统计" @click.native="statisticsTime">
+        时间统计
+      </mt-tab-item>
+      <mt-tab-item>
+        <mt-button type="primary" @click.native="ji" size="small">记一笔</mt-button>
+      </mt-tab-item>
+      <mt-tab-item id="流水" @click.native="runningWater">
+        流水
+      </mt-tab-item>
+      <mt-tab-item id="设置" @click.native="toSetUp">
+        设置
+      </mt-tab-item>
+    </mt-tabbar>
+  </div>
+</body>
+<script>
+  let tempatetDate = {{.}}
+  let app = new Vue({
+    delimiters: ["{[", "]}"],
+    el: "#app",
+    data: {
+      selected: "",
+      dayOut: 0,
+      dayIn: 0,
+      monthOut: 0,
+      monthIn: 0,
+      yearOut: 0,
+      yearIn: 0,
+    },
+    mounted() {
+      console.log(tempatetDate)
+      this.dayOut = tempatetDate.dayOut
+      this.dayIn = tempatetDate.dayIn
+      this.monthOut = tempatetDate.monthOut
+      this.monthIn = tempatetDate.monthIn
+      this.yearOut = tempatetDate.yearOut
+      this.yearIn = tempatetDate.yearIn
+    },
+    methods: {
+      //分类统计
+      statisticsClassify() {
+        window.location.href = "/statistics/StatisticsClassifyIndex"
+      },
+      //时间统计
+      statisticsTime() {
+        window.location.href = "/statistics/StatisticsTimeIndex"
+      },
+      //前往设置页面
+      toSetUp() {
+        window.location.href = "/toSetUp"
+      },
+      //前往记录界面
+      ji() {
+        window.location.href = "/record/index"
+      },
+      //流水页面
+      runningWater() {
+        window.location.href = "/record/runningWater"
+      },
+    },
+  })
+</script>
+
+</html>

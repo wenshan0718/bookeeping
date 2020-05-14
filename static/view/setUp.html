@@ -1,0 +1,414 @@
+<!-- 设置页面 -->
+<html>
+
+<head>
+    <title>设置</title>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+</head>
+<script src="/static/js/axios.min.js"></script>
+<script src="/static/js/Vue.js"></script>
+<script src="/static/js/mint-ui.js"></script>
+<script src="/static/js/util.js"></script>
+<script src="/static/js/md5.js"></script>
+<script src="/static/js/json2.js"></script>
+<link rel="stylesheet" href="/static/css/mint-ui.css">
+
+<body>
+    <div id="app">
+        <!-- 顶部部分栏 -->
+        <div>
+            <mt-header fixed title="设置">
+                <router-link to="/" slot="left">
+                    <mt-button icon="back" @click.native="close">返回</mt-button>
+                </router-link>
+            </mt-header>
+        </div>
+        <div style="margin-top: 10%;">
+            <mt-cell title="分类设置" value=">" @click.native="onclassifyOpen"></mt-cell>
+            <mt-cell title="修改密码:" value=">" @click.native="alterClick" ></mt-cell>
+            <mt-cell title="退出登录:" value=">" @click.native="returnLogint"></mt-cell>
+            <!-- --------------分类操作开始-------------- -->
+            <!-- 一级分类 -->
+            <mt-popup v-model="popupClassify.popupVisible" popup.popupVisible style="height: 100%;width: 100%;">
+                <div>
+                    <mt-header fixed title="一级分类">
+                        <router-link to="/" slot="left">
+                            <mt-button icon="back" @click.native="onclassifyClose">返回</mt-button>
+                            <!-- <mt-button @click.native="classifyAddClick" >新建一级分类</mt-button> -->
+                        </router-link>
+                    </mt-header>
+                </div>
+                <div class="prouBody">
+                    <mt-cell v-for="(v,i) in popupClassify.data" :title="v.name"
+                        >
+                        {[v.outin==1?"支出":"收入"]}
+                        <mt-button @click.native="onclassifyOpenTwo(v)">二级分类</mt-button>
+                        <mt-button @click.native="Classifyedit(v)">编辑</mt-button>
+                    </mt-cell>
+                    <mt-button style="margin-top: 20px;" @click.native="classifyAddClick" type="primary"  size="large">新建一级分类</mt-button>
+                </div>
+            </mt-popup>
+            <!-- 一级分类 -->
+               <!-- 二级分类开始 -->
+               <mt-popup v-model="popupClassifyTwo.popupVisible" popup.popupVisible style="height: 100%;width: 100%;">
+                <div>
+                    <mt-header fixed title="二级分类">
+                        <router-link to="/" slot="left">
+                            <mt-button icon="back" @click.native="onclassifyCloseTwo">返回</mt-button>
+                            <!-- <mt-button @click.native="classifyAddClick">新建二级分类</mt-button> -->
+                        </router-link>
+                    </mt-header>
+                </div>
+                <div class="prouBody" >
+                    <mt-cell v-for="(v,i) in popupClassifyTwo.data" :title="v.name" value="">
+                        <mt-button @click.native="Classifyedit(v)">编辑</mt-button>
+                    </mt-cell>
+                    <mt-button  style="margin-top: 20px;" @click.native="classifyAddClick" type="primary"  size="large">新建二级分类</mt-button>
+                </div>
+            </mt-popup>
+            <!-- 二级分类结束 -->
+            <!-- 添加分类弹窗 -->
+            <mt-popup v-model="classifyAdd.popupVisible" popup.popupVisible style="height: 100%;width: 100%;">
+                <div>
+                    <mt-header fixed :title="classifyAdd.title">
+                        <router-link to="/" slot="left">
+                            <mt-button icon="back" @click.native="classifyAddClose">返回</mt-button>
+                          
+                        </router-link>
+                    </mt-header>
+                </div>
+                <div class="prouBody">                                                       
+                    <mt-field label="分类名称" placeholder="请输入分类名称" v-model="classifyAdd.form.name"  :attr="{ maxlength: 10 }"></mt-field>
+                    <mt-field label="排序" placeholder="请输入数字(数大靠前)" v-model="classifyAdd.form.sort"  :attr="{ maxlength: 10 }"></mt-field>
+                    <mt-radio v-if="rowLayer.layer==1"
+                    title="支出/收入"
+                    v-model="classifyAdd.form.outin"
+                    :options="options">
+                    </mt-radio>
+                    <mt-button style="margin-top: 20px;" @click.native="classifyAddSave"  type="primary" size="large" v-if="classifyAdd.type=='add'">保存</mt-button>
+                    <mt-button style="margin-top: 20px;" @click.native="classifyAddEdit"  type="primary" size="large" v-if="classifyAdd.type=='edit'">保存</mt-button>
+                    <mt-button style="margin-top: 20px;" @click.native="classifyAddDel" type="danger" size="large" v-if="classifyAdd.type=='edit'">删除</mt-button>
+                </div>
+            </mt-popup>
+            <!-- 添加分类弹窗结束 -->
+             <!-- --------------分类操作结束-------------- -->
+
+            <!-- --------------修改密码弹窗开始-------------- -->
+            <mt-popup v-model="alter.popupVisible" closeOnClickModal="false" popup-transition="popup-fade" style="height:100%;width:100%;">
+                <mt-field label="原密码" placeholder="请输入原密码" type="password"  v-model="alter.form.oldPassword" :attr="{ maxlength: 50 }" ></mt-field>
+                <mt-field label="新密码" placeholder="请输入新密码" type="password" :attr="{ maxlength: 50 }" v-model="alter.form.newPassword"></mt-field>
+                <mt-field label="确认密码" placeholder="请输入新密码" type="password"  :attr="{ maxlength: 50 }" v-model="alter.form.newPasswordTwo"></mt-field>
+                <div style="margin-top: 10px;"></div>
+                <mt-button type="primary" @click.native="alterSave" size="large">保存</mt-button>
+                <mt-button type="default" size="large" @click.native="alterClose">取消</mt-button>
+            </mt-popup>
+             <!-- --------------修改密码弹窗结束-------------- -->
+
+        </div>
+
+
+
+    </div>
+</body>
+<script>
+    let app = new Vue({
+    
+        delimiters: ["{[", "]}"],
+        el: "#app",
+        data: {
+            //添加分类
+            classifyAdd: {
+                popupVisible: false,
+                title:"添加",
+                type:"add",
+                form: {
+                    //分类名称
+                    name:"",
+                    //分类排序
+                    sort:0,
+                    //二级分类的上级(一级分类的)id
+                    parentId:0,
+                    //层级1表示一级分类2表示二级分类
+                    layer:0,
+                    //1支出2收入
+	                outin : 1,
+                },
+            },
+            selected: "",
+            //一级分类弹窗和数据
+            popupClassify: {
+                popupVisible: false,
+                data: [],
+            },
+            //二级分类弹窗和数据
+            popupClassifyTwo: {
+                popupVisible: false,
+                data: [],
+            },
+            //单选框数据
+            options:[
+                {    
+                 label: '支出',
+                 value: 1
+                },
+                {    
+                 label: '收入',
+                 value: 2
+                }
+            ],
+            //当前层级和父类id
+            rowLayer:{
+                //当前层级
+                layer:1,
+                //二级分类是记录父类id
+                parentId:0
+            },
+            //修改密码
+            alter:{
+                popupVisible:false,
+                form:{
+                oldPassword:"",
+                newPassword:"",
+                newPasswordTwo:"",
+                }
+            },
+        },
+        mounted() {
+
+        },
+        methods: {
+            //退出登录
+            returnLogint(){
+                //清空cookie
+                document.cookie = "user="
+                document.cookie="sessionId="
+                //返回登录页面
+                window.location.href="/login"
+            },
+               //----------修改密码操作开始--------
+            //修改密码保存
+            alterSave(){
+                if (isEmpty(this.alter.form.oldPassword)||isEmpty(this.alter.form.newPassword)||isEmpty(this.alter.form.newPasswordTwo)){
+                  alert("请输入密码")
+                      return
+                }
+                if (this.alter.form.newPassword !=this.alter.form.newPasswordTwo ){
+                    alert("新密码和确认密码不相同")
+                    return   
+                }
+                this.alter.form.oldPassword = hex_md5(this.alter.form.oldPassword)
+                this.alter.form.newPassword = hex_md5(this.alter.form.newPassword)
+                this.$indicator.open('加载中...');
+                axios.post("/setUp/alterSave",{oldPassword:this.alter.form.oldPassword,newPassword:this.alter.form.newPassword}).then(({ data }) => {
+                    this.$indicator.close()
+                    if (data.status != 200) return alert(data.mes)
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.returnLogint()
+                })
+            },
+            //修改密码弹窗关闭
+            alterClose(){
+                this.alter={
+                popupVisible:false,
+                form:{
+                oldPassword:"",
+                newPassword:"",
+                newPasswordTwo:"",
+                }
+                }
+            },
+            //点击修改密码按钮打开修改弹窗
+            alterClick(){
+                this.alter.popupVisible=true
+            },
+             //----------修改密码操作结束--------
+
+            //----------分类的操作开始--------
+            //删除分类
+            classifyAddDel(){
+                this.$indicator.open('加载中...');
+                axios.post("/setUp/classifyAddDel",this.classifyAdd.form).then(({data})=>{
+                    this.$indicator.close()
+                    if (data.status!=200){
+                        alert(data.mes)
+                        return
+                    }
+                   
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.SelectClassify()
+                    this.classifyAddClose()
+                })
+            },
+            //修改分类
+            classifyAddEdit(){
+                if (isEmpty(this.classifyAdd.form.name)) {
+                    alert("请填入分类名称")
+                    return
+                }
+                if (isNaN(this.classifyAdd.form.sort)) {
+                    alert("请填入正确的分类排序")
+                    return
+                }
+                this.classifyAdd.form.sort=parseInt(this.classifyAdd.form.sort)
+                this.$indicator.open('加载中...');
+                axios.post("/setUp/classifyAddEdit",this.classifyAdd.form).then(({data})=>{
+                    this.$indicator.close()
+                    if (data.status!=200){
+                        alert(data.mes)
+                        return
+                    }
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.SelectClassify()
+                    this.classifyAddClose()
+                })
+            },
+            //编辑分类
+            Classifyedit(v){
+              this.classifyAdd.title="编辑",
+                this.classifyAdd.type="edit",
+                this.classifyAdd.form=v
+                console.log( this.classifyAdd.form)
+                this.classifyAdd.popupVisible=true
+            },
+            //获取分类
+            SelectClassify(){
+               let  form ={
+                layer:this.rowLayer.layer,
+                parentId:this.classifyAdd.form.parentId
+               }
+                this.$indicator.open('加载中...');
+                axios.post("/setUp/SelectClassify",form).then(({data})=>{
+                    this.$indicator.close()
+                    if (data.status!=200){
+                        alert(data.mes)
+                        return
+                    }
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    //如果获取的是一级分类就把数据放入一级分类,二级就放入二级
+                    if(form.layer==1){
+                        this.popupClassify.data=data.data
+                    }else if(form.layer==2){
+                        this.popupClassifyTwo.data=data.data
+                    }
+                })
+            },
+            //保存添加分类
+            classifyAddSave(){
+                if (isEmpty(this.classifyAdd.form.name)) {
+                    alert("请填入分类名称")
+                    return
+                }
+                if (isNaN(this.classifyAdd.form.sort)) {
+                    alert("请填入正确的分类排序")
+                    return
+                }
+                this.classifyAdd.form.layer=this.rowLayer.layer
+                this.classifyAdd.form.parentId=this.rowLayer.parentId
+                this.classifyAdd.form.sort=parseInt(this.classifyAdd.form.sort)
+                this.$indicator.open('加载中...');
+                axios.post("/setUp/classifySave",this.classifyAdd.form).then(({data})=>{
+                    this.$indicator.close()
+                    if (data.status!=200){
+                        alert(data.mes)
+                        return
+                    }
+                   
+                    this.$toast({
+                        message: data.mes,
+                        duration: 1000
+                    });
+                    this.SelectClassify()
+                    this.classifyAddClose()
+                })
+                
+            },
+            //添加分类弹窗关闭
+            classifyAddClose() {
+                this.classifyAdd= {
+                popupVisible: false,
+                form: {
+                    //分类名称
+                    name:"",
+                    //分类排序
+                    sort:0,
+                    //二级分类的上级(一级分类的)id
+                    parentId:0,
+                    //层级1表示一级分类2表示二级分类
+                    layer:0,
+                    outin : 1,
+                },
+            }
+            },
+            //点击添加
+            classifyAddClick() {
+                this.classifyAdd.title="添加",
+                this.classifyAdd.type="add",
+                this.classifyAdd.popupVisible = true
+               
+            },
+            //二级分类关闭弹窗
+            onclassifyCloseTwo(row) {
+                  //当前层级
+                  this.rowLayer.layer=1
+                //二级分类是记录父类id
+                this.rowLayer.parentId=0
+                this.popupClassifyTwo.popupVisible = false
+            },
+            //二级分类打开弹窗
+            onclassifyOpenTwo(row) {
+                this.classifyAdd.form.layer=2
+                this.classifyAdd.form.parentId=row.id
+                  //当前层级
+                  this.rowLayer.layer=2
+                //二级分类是记录父类id
+                this.rowLayer.parentId=row.id
+                this.SelectClassify()
+                this.popupClassifyTwo.popupVisible = true
+            },
+            //一级分类关闭弹窗
+            onclassifyClose() {
+                //当前层级
+                this.rowLayer.layer=1
+                //二级分类是记录父类id
+                this.rowLayer.parentId=0
+                this.popupClassify.popupVisible = false
+            },
+            //一级分类打开弹窗
+            onclassifyOpen() {
+                //当前层级
+                this.rowLayer.layer=1
+                //二级分类是记录父类id
+                this.rowLayer.parentId=0
+                this.SelectClassify()
+                this.popupClassify.popupVisible = true
+            },
+   //----------分类的操作结束--------
+
+            //返回主页
+            close() {
+                window.location.href = "/master"
+            },
+
+        },
+    })
+</script>
+<style>
+    .prouBody{
+         margin-top: 10%
+    }
+</style>
+</html>
