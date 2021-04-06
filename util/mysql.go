@@ -16,7 +16,7 @@ var DB *sql.DB
 func MysqlInit() (err error) {
 	fmt.Println("初始化数据库")
 	//创建数据库连接
-	db, err := sql.Open("mysql", "wen:123456@(localhost:3306)/bookkeeping")
+	db, err := sql.Open("mysql", "wen1:123456@(localhost:3306)/bookkeeping")
 	if err != nil {
 		fmt.Println("初始化数据库连接失败", err)
 		return

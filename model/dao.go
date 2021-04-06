@@ -14,7 +14,7 @@ import (
 根据用户名和密码查找用户
 */
 func GetUserNP(name string, password string) (*entity.User, error) {
-	var sql = " SELECT ID,NAME,PASSWORD FROM USER WHERE NAME=? and PASSWORD=?"
+	var sql = " SELECT ID,NAME,PASSWORD FROM PERSON WHERE NAME=? and PASSWORD=?"
 	row := util.DB.QueryRow(sql, name, password)
 	user := entity.NewUser()
 	err := row.Scan(&user.Id, &user.Name, &user.Password)
@@ -30,7 +30,7 @@ func GetUserNP(name string, password string) (*entity.User, error) {
 根据Id查找用户
 */
 func GetUserId(id int) (*entity.User, error) {
-	var sql = " SELECT ID,NAME,PASSWORD FROM USER WHERE ID=? "
+	var sql = " SELECT ID,NAME,PASSWORD FROM PERSON WHERE ID=? "
 	row := util.DB.QueryRow(sql, id)
 	user := entity.NewUser()
 	err := row.Scan(&user.Id, &user.Name, &user.Password)
@@ -44,7 +44,7 @@ func GetUserId(id int) (*entity.User, error) {
 保存用户信息
 */
 func SaveUser(user *entity.User) error {
-	var sql = " INSERT INTO  USER (NAME,PASSWORD)  VALUES(?,?)"
+	var sql = " INSERT INTO  PERSON (NAME,PASSWORD)  VALUES(?,?)"
 	_, err := util.DB.Exec(sql, user.Name, user.Password)
 	if err != nil {
 		return err
@@ -233,7 +233,7 @@ func DelClassify(classify *entity.Classify) error {
 修改用户密码
 */
 func AlterUserPassword(id int, password string) error {
-	var sql = " UPDATE   USER SET PASSWORD=? WHERE ID=? "
+	var sql = " UPDATE   PERSON SET PASSWORD=? WHERE ID=? "
 	_, err := util.DB.Exec(sql, password, id)
 	if err != nil {
 		return err
